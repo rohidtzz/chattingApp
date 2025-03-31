@@ -88,7 +88,7 @@ class MessageController extends Controller
                 'connect_timeout' => 3.0
             ]);
 
-            $response = $client->post('http://localhost:3000/send-message', [
+            $response = $client->post(config('app.node_server_url').'/send-message', [
                 'headers' => [
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json'

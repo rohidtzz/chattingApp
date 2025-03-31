@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const WebSocket = require('ws');
 const cors = require('cors');
@@ -5,14 +7,16 @@ const { v4: uuidv4 } = require('uuid');
 const { body, validationResult } = require('express-validator');
 
 const app = express();
-const HTTP_PORT = 3000;
-const WS_PORT = 8080;
+const HTTP_PORT = process.env.HTTP_PORT || 3000;
+const WS_PORT = process.env.WS_PORT || 8080;
 
 // Simpan koneksi pengguna dan status online
 const clients = new Map();
 const userStatus = new Map();
 
-app.use(cors({ origin: 'http://localhost:8000' }));
+const corsOrigin = process.env.APP_CORS_ORIGIN || 'http://localhost:8000';
+
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 
 app.post(
@@ -106,7 +110,7 @@ function sendPrivateMessage(sender_id, receiver_id, message) {
     if (receiverSocket && receiverSocket.readyState === WebSocket.OPEN) {
         receiverSocket.send(JSON.stringify(message));
     } else {
-        console.log(`User ${receiver_id} is offline, message not delivered`);
+        console.log(`User ${receiver_id} is offline`);
     }
 }
 

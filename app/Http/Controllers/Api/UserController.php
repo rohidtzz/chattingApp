@@ -24,7 +24,7 @@ class UserController extends Controller
                 'connect_timeout' => 3.0
             ]);
 
-            $response = $client->get('http://localhost:3000/online-users');
+            $response = $client->get(config('app.node_server_url').'/online-users');
 
             // Log the message
             Log::info("Data stored and sent", [

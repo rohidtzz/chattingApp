@@ -146,10 +146,11 @@
         const currentUserId = "{{ auth()->user()->id }}";
         const receiverId = "{{ $receiver_id }}";
         const url = "{{ url('api/chat/'.$receiver_id ) }}";
+        const webSocketUrl = "{{ config('app.websocket_url') }}";
 
 
         function connectWebSocket() {
-            ws = new WebSocket('ws://localhost:8080');
+            ws = new WebSocket(webSocketUrl);
 
 
             ws.onopen = function() {
