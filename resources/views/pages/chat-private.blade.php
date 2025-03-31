@@ -337,13 +337,30 @@
 
                     if (parsedData.online_users) {
 
+                        $('.user-list').each(function() {
+                            const userElement = $(this);
+                            const userId = userElement.data('user-id');
 
-                        parsedData.online_users.forEach(function(userId) {
-                            const userElement = $('#listuser-' + userId);
-                            if (userElement.length) {
-                                userElement.find('.status-badge').text('Online').removeClass('bg-secondary').addClass('bg-success');
+                            if (parsedData.online_users.includes(userId.toString())) {
+                                userElement.find('.status-badge')
+                                    .text('Online')
+                                    .removeClass('bg-secondary')
+                                    .addClass('bg-success');
+                            } else {
+                                userElement.find('.status-badge')
+                                    .text('Offline')
+                                    .removeClass('bg-success')
+                                    .addClass('bg-secondary');
                             }
                         });
+
+
+                        // parsedData.online_users.forEach(function(userId) {
+                        //     const userElement = $('#listuser-' + userId);
+                        //     if (userElement.length) {
+                        //         userElement.find('.status-badge').text('Online').removeClass('bg-secondary').addClass('bg-success');
+                        //     }
+                        // });
 
                     }
 
