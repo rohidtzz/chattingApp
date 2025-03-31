@@ -12,3 +12,5 @@ Route::post('/chat/{id}', [App\Http\Controllers\Api\Chat\MessageController::clas
 
 Route::get('/chat/{receiver_id}/{sender_id}', [App\Http\Controllers\Api\Chat\MessageController::class, 'index']);
 
+Route::get('/online-users', [App\Http\Controllers\Api\UserController::class, 'getOnlineUser']);
+

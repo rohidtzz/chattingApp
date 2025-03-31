@@ -28,5 +28,26 @@ class DatabaseSeeder extends Seeder
             'email' => 'user@gmail.com',
             'password' => bcrypt('secret')
         ]);
+
+        DB::table('users')->insert([
+            'id' => Str::uuid(),
+            'username' => 'rohid',
+            'email' => 'rohid@gmail.com',
+            'password' => bcrypt('secret')
+        ]);
+
+        DB::table('users')->insert([
+            'id' => Str::uuid(),
+            'username' => 'anang',
+            'email' => 'anang@gmail.com',
+            'password' => bcrypt('secret')
+        ]);
+
+        DB::table('users')->insert([
+            'id' => Str::uuid(),
+            'username' => 'prabowo',
+            'email' => 'prabowo@gmail.com',
+            'password' => bcrypt('secret')
+        ]);
     }
 }

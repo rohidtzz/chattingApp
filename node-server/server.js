@@ -8,8 +8,9 @@ const app = express();
 const HTTP_PORT = 3000;
 const WS_PORT = 8080;
 
-// Simpan koneksi pengguna berdasarkan user_id
+// Simpan koneksi pengguna dan status online
 const clients = new Map();
+const userStatus = new Map();
 
 app.use(cors({ origin: 'http://localhost:8000' }));
 app.use(express.json());
@@ -46,6 +47,11 @@ app.post(
     }
 );
 
+app.get('/online-users', (req, res) => {
+    const onlineUsers = [...userStatus.entries()].filter(([_, status]) => status === 'online').map(([user]) => user);
+    res.json({ online_users: onlineUsers });
+});
+
 const httpServer = app.listen(HTTP_PORT, () => {
     console.log(`HTTP server running on port ${HTTP_PORT}`);
 });
@@ -56,13 +62,21 @@ wss.on('connection', (ws, req) => {
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message);
+
             if (data.type === 'register' && data.user_id) {
-                // Simpan koneksi dengan user_id
+
                 clients.set(data.user_id, ws);
+                userStatus.set(data.user_id, 'online');
+
+                const onlineUsers = [...userStatus.entries()].filter(([_, status]) => status === 'online').map(([user]) => user);
+                sendOnlineUsers({ type: 'online_users', online_users: onlineUsers });
+
                 console.log(`User ${data.user_id} connected`);
+                broadcastStatusUpdate();
             } else if (data.type === 'private_message') {
-                // Kirim pesan ke penerima yang dituju
                 sendPrivateMessage(data.sender_id, data.receiver_id, data);
+            } else if (data.type === 'typing') {
+                sendTypingStatus(data.sender_id, data.receiver_id, data.is_typing);
             }
         } catch (error) {
             console.error('Invalid message format:', message);
@@ -70,11 +84,18 @@ wss.on('connection', (ws, req) => {
     });
 
     ws.on('close', () => {
-        // Hapus user_id saat koneksi terputus
+
         clients.forEach((client, userId) => {
             if (client === ws) {
+
                 clients.delete(userId);
+                userStatus.set(userId, 'offline');
+
+                const onlineUsers = [...userStatus.entries()].filter(([_, status]) => status === 'online').map(([user]) => user);
+                sendOnlineUsers({ type: 'online_users', online_users: onlineUsers });
+
                 console.log(`User ${userId} disconnected`);
+                broadcastStatusUpdate();
             }
         });
     });
@@ -87,6 +108,39 @@ function sendPrivateMessage(sender_id, receiver_id, message) {
     } else {
         console.log(`User ${receiver_id} is offline, message not delivered`);
     }
+}
+
+function sendTypingStatus(sender_id, receiver_id, is_typing) {
+    const receiverSocket = clients.get(receiver_id);
+    if (receiverSocket && receiverSocket.readyState === WebSocket.OPEN) {
+        receiverSocket.send(JSON.stringify({ type: 'typing', sender_id, is_typing }));
+    }
+}
+
+function broadcastStatusUpdate() {
+    const statusData = { type: 'status_update', users: Object.fromEntries(userStatus) };
+    clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(statusData));
+        }
+    });
+}
+
+function sendOnlineUsers(message) {
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(message));
+        }
+    });
+}
+
+
+function broadcastMessage(message) {
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(message));
+        }
+    });
 }
 
 console.log(`WebSocket server running on port ${WS_PORT}`);
