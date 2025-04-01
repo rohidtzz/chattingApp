@@ -110,6 +110,13 @@ function sendPrivateMessage(sender_id, receiver_id, message) {
     if (receiverSocket && receiverSocket.readyState === WebSocket.OPEN) {
         receiverSocket.send(JSON.stringify(message));
     } else {
+
+        //ini nanti dicomment aja
+        clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify(message));
+            }
+        });
         console.log(`User ${receiver_id} is offline`);
     }
 }
