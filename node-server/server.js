@@ -60,7 +60,8 @@ const httpServer = app.listen(HTTP_PORT, () => {
     console.log(`HTTP server running on port ${HTTP_PORT}`);
 });
 
-const wss = new WebSocket.Server({ host: '0.0.0.0', port: WS_PORT });
+// const wss = new WebSocket.Server({ host: '0.0.0.0', port: WS_PORT });
+const wss = new WebSocket.Server({ server: httpServer });
 
 wss.on('connection', (ws, req) => {
     ws.on('message', (message) => {
@@ -154,8 +155,8 @@ function broadcastMessage(message) {
     });
 }
 
-console.log(`WebSocket server running on port ${WS_PORT}`);
-
+// console.log(`WebSocket server running on port ${WS_PORT}`);
+console.log(`WebSocket server running on port ${HTTP_PORT}`);
 
 // const express = require('express');
 // const WebSocket = require('ws');
