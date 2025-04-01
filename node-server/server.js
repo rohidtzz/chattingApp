@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const WebSocket = require('ws');
-const cors = require('cors');
+// const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const { body, validationResult } = require('express-validator');
 
@@ -14,9 +14,9 @@ const WS_PORT = process.env.WS_PORT || 8080;
 const clients = new Map();
 const userStatus = new Map();
 
-const corsOrigin = process.env.APP_CORS_ORIGIN || 'http://localhost:8000';
+// const corsOrigin = process.env.APP_CORS_ORIGIN || 'http://localhost:8000';
 
-app.use(cors({ origin: corsOrigin }));
+// app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 
 app.post(
