@@ -22,6 +22,8 @@
     <!-- CSS Files -->
     <link id="pagestyle" href="{{ asset('assets/css/argon-dashboard.css') }}" rel="stylesheet" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
 
 </head>
 
@@ -137,104 +139,57 @@
     {{-- <script src="{{ asset('assets/js/argon-dashboard.js') }}"></script> --}}
 
     <script>
-        let ws;
-        let reconnectAttempts = 0;
-        let reconnectTimeout;
+        let socket;
         let typingTimeout;
 
         const currentUsername = "{{ auth()->user()->username }}";
         const currentUserId = "{{ auth()->user()->id }}";
         const receiverId = "{{ $receiver_id }}";
         const url = "{{ config('app.env') === 'local' ? url('api/chat/'.$receiver_id) : secure_url('api/chat/'.$receiver_id) }}";
-        const webSocketUrl = "{{ config('app.websocket_url') }}";
+        const socketUrl = "{{ config('app.websocket_url') }}"; // ganti jadi alamat socket.io
 
+        function connectSocketIO() {
+            socket = io(socketUrl, { transports: ['websocket'], reconnection: true });
 
-        function connectWebSocket() {
-            ws = new WebSocket(webSocketUrl);
+            socket.on('connect', () => {
+                console.log('Connected to Socket.IO');
 
-
-            ws.onopen = function() {
-                console.log('Connected to WebSocket');
-
-                reconnectAttempts = 0;
-                clearTimeout(reconnectTimeout);
-
-                const user_id = currentUserId;
-                ws.send(JSON.stringify({ type: "register", user_id }));
-
+                socket.emit('register', { user_id: currentUserId });
                 getOnlineUser();
-            };
+            });
 
-            ws.onmessage = function(e) {
-                try {
-                    let parsedData = JSON.parse(e.data);
+            socket.on('disconnect', () => {
+                console.log('Disconnected from Socket.IO');
+            });
 
-                    if (typeof parsedData === "string") {
-                        parsedData = JSON.parse(parsedData);
-                    }
-
-                    if (parsedData.sender_id !== currentUserId) {
-                        displayMessage(parsedData.username, parsedData.message, parsedData.timestamp);
-                    }
-
-                    if (parsedData.type === "typing") {
-                        updateTypingStatus(parsedData.sender_id, parsedData.is_typing);
-                    }
-
-                    if(parsedData.type === "online_users"){
-                        getOnlineUser();
-                    }
-
-                } catch (error) {
-                    console.error('Invalid message format:', e.data);
+            socket.on('private_message', (data) => {
+                if (data.sender_id !== currentUserId) {
+                    displayMessage(data.username, data.message, data.timestamp);
                 }
-            };
+            });
 
-            ws.onerror = function(error) {
-                console.error('WebSocket error:', error);
-                ws.onclose = null;
-                ws.close();
-            };
+            socket.on('typing', (data) => {
+                updateTypingStatus(data.sender_id, data.is_typing);
+            });
 
-            ws.onclose = function() {
-                console.log('WebSocket Disconnected!');
+            socket.on('online_users', (data) => {
+                getOnlineUser(); // atau bisa langsung update pakai data.online_users
+            });
 
-                // Hitung waktu tunggu dengan exponential backoff
-                reconnectAttempts++;
-                let timeout = Math.min(5000 * Math.pow(2, reconnectAttempts), 60000); // Maks 60 detik
-
-                console.log(`Reconnecting in ${timeout / 1000} seconds...`);
-
-                // Pastikan hanya satu reconnect berjalan
-                clearTimeout(reconnectTimeout);
-                reconnectTimeout = setTimeout(() => {
-                    ws.onclose = null; // Hindari event listener dobel sebelum reconnect
-                    connectWebSocket();
-                }, timeout);
-            };
+            socket.on('status_update', (data) => {
+                // Optional: bisa gunakan untuk sinkron status semua user
+                getOnlineUser();
+            });
         }
-
-        function formatTime(timestamp) {
-            if (!timestamp) return '';
-
-            const date = new Date(timestamp);
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-
-            return `${hours}:${minutes}`;
-        }
-
 
         function displayMessage(username, message, timestamp = null) {
             const isCurrentUser = username === currentUsername;
             const timeFormatted = formatTime(timestamp);
             const messageClass = isCurrentUser ? 'sent' : 'received';
 
-            if(username){
-
+            if (username) {
                 let messageElement = `
                     <li class="d-flex justify-content-${isCurrentUser ? 'end' : 'start'} mb-4">
-
                         <div class="card w-75">
                             <div class="card-header d-flex justify-content-between p-3">
                                 <p class="fw-bold mb-0">${username}</p>
@@ -246,21 +201,25 @@
                         </div>
                     </li>
                 `;
-
                 $('#messages').append(messageElement).scrollTop($('#messages')[0].scrollHeight);
             }
-
-
         }
 
-        $('#messageForm').on('submit', function(e) {
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+
+        $('#messageForm').on('submit', function (e) {
             e.preventDefault();
-            let messageInput = $('#messageInput');
+            const messageInput = $('#messageInput');
             const message = messageInput.val().trim();
 
-
             if (message) {
-                const datas = {
+                const data = {
                     message: message,
                     sender_id: currentUserId,
                     username: currentUsername,
@@ -270,14 +229,12 @@
                     url: url,
                     method: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify(datas),
-                    success: function(response) {
-                        // Display sent message only once
-
+                    data: JSON.stringify(data),
+                    success: function () {
                         displayMessage(currentUsername, message, new Date().toISOString());
                         messageInput.val('');
                     },
-                    error: function(error) {
+                    error: function (error) {
                         console.error('Error sending message:', error);
                     }
                 });
@@ -286,58 +243,46 @@
 
         function getMessages() {
             $.ajax({
-                url: '/api/chat/'+receiverId+'/'+currentUserId,
+                url: '/api/chat/' + receiverId + '/' + currentUserId,
                 method: 'GET',
-                success: function(data) {
-
+                success: function (data) {
                     if (data.status === "success" && Array.isArray(data.messages)) {
-                        data.messages.forEach(function(message) {
+                        data.messages.forEach(function (message) {
                             displayMessage(message.username, message.message, message.created_at);
                         });
-                    } else {
-                        console.error("Data messages bukan array atau status bukan success");
                     }
                 },
-                error: function(error) {
+                error: function (error) {
                     console.error('Error fetching messages:', error);
                 }
             });
         }
 
         function updateTypingStatus(sender_id, isTyping) {
-
-            if(sender_id === receiverId){
-
-                if (isTyping) {
-
-                    $('#typingStatus').prop('hidden', false)
-                } else {
-                    $('#typingStatus').prop('hidden', true);
-                }
+            if (sender_id === receiverId) {
+                $('#typingStatus').prop('hidden', !isTyping);
             }
-
         }
 
         function sendTypingStatus(isTyping) {
-            ws.send(JSON.stringify({ type: "typing", sender_id: currentUserId, receiver_id: receiverId, is_typing: isTyping }));
+            if (socket && socket.connected) {
+                socket.emit('typing', {
+                    sender_id: currentUserId,
+                    receiver_id: receiverId,
+                    is_typing: isTyping
+                });
+            }
         }
 
-        function getOnlineUser(){
-
+        function getOnlineUser() {
             $.ajax({
                 url: '/api/online-users',
                 method: 'GET',
-                success: function(data) {
-
-                    let parsedData = JSON.parse(data.data);
-
-                    if (typeof parsedData === "string") {
-                        parsedData = JSON.parse(parsedData);
-                    }
+                success: function (data) {
+                    let parsedData = JSON.parse(data.data || '{}');
 
                     if (parsedData.online_users) {
-
-                        $('.user-list').each(function() {
+                        $('.user-list').each(function () {
                             const userElement = $(this);
                             const userId = userElement.data('user-id');
 
@@ -353,35 +298,20 @@
                                     .addClass('bg-secondary');
                             }
                         });
-
-
-                        // parsedData.online_users.forEach(function(userId) {
-                        //     const userElement = $('#listuser-' + userId);
-                        //     if (userElement.length) {
-                        //         userElement.find('.status-badge').text('Online').removeClass('bg-secondary').addClass('bg-success');
-                        //     }
-                        // });
-
                     }
-
                 },
-                error: function(error) {
-                    console.error('Error fetching messages:', error);
+                error: function (error) {
+                    console.error('Error fetching online users:', error);
                 }
             });
-
         }
 
-
-        $(document).ready(function() {
-            connectWebSocket();
-
+        $(document).ready(function () {
+            connectSocketIO();
             getMessages();
-
-
         });
 
-        $('#messageInput').on('input', function() {
+        $('#messageInput').on('input', function () {
             clearTimeout(typingTimeout);
             sendTypingStatus(true);
 
@@ -391,15 +321,13 @@
         });
 
         document.getElementById("messageInput").addEventListener("keydown", function (event) {
-            if (event.key === "Enter") {
-                if (!event.shiftKey) {
-                    event.preventDefault();
-                    document.getElementById("messageForm").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-                }
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                document.getElementById("messageForm").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
             }
         });
-
     </script>
+
 
 </body>
 
