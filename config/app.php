@@ -124,6 +124,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    'websocket_url' => env('WEBSOCKET_URL', 'http://localhost:3000'),
-    'node_server_url' => env('NODE_SERVER_URL', 'http://localhost:3000'),
+    'websocket_url' => env('WEBSOCKET_URL', 'http://localhost:3001/socket.io'),
+    'node_server_url' => env('NODE_SERVER_URL', 'http://localhost:3001'),
 ];
