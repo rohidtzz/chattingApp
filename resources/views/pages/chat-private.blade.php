@@ -149,7 +149,7 @@
         const socketUrl = "{{ config('app.websocket_url') }}"; // ganti jadi alamat socket.io
 
         function connectSocketIO() {
-            socket = io(socketUrl, { transports: ['websocket'], reconnection: true });
+            socket = io(socketUrl, { transports: ['websocket'], reconnection: true, path: '/socket.io/',});
 
             socket.on('connect', () => {
                 console.log('Connected to Socket.IO');

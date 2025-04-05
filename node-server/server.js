@@ -14,7 +14,8 @@ const io = new Server(server, {
     cors: {
         origin: process.env.APP_CORS_ORIGIN || 'http://localhost:8000',
         methods: ['GET', 'POST']
-    }
+    },
+    path: '/socket.io/',
 });
 
 // Menyimpan koneksi pengguna dan status online
