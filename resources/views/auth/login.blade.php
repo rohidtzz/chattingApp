@@ -23,14 +23,27 @@
                                     <form role="form" method="POST" action="{{ route('login.perform') }}">
                                         @csrf
                                         @method('post')
-                                        <div class="flex flex-col mb-3">
-                                            <input type="email" name="email" class="form-control form-control-lg" value="{{ old('email') ?? 'admin@gmail.com' }}" aria-label="Email">
-                                            @error('email') <p class="text-danger text-xs pt-1"> {{$message}} </p>@enderror
-                                        </div>
-                                        <div class="flex flex-col mb-3">
-                                            <input type="password" name="password" class="form-control form-control-lg" aria-label="Password" value="secret" >
-                                            @error('password') <p class="text-danger text-xs pt-1"> {{$message}} </p>@enderror
-                                        </div>
+                                        @if (config('app.env') !== "production")
+                                            <div class="flex flex-col mb-3">
+                                                <input type="email" name="email" class="form-control form-control-lg" value="{{ old('email') ?? 'admin@gmail.com' }}" aria-label="Email" placeholder="Masukan email">
+                                                @error('email') <p class="text-danger text-xs pt-1"> {{$message}} </p>@enderror
+                                            </div>
+                                            <div class="flex flex-col mb-3">
+                                                <input type="password" name="password" class="form-control form-control-lg" aria-label="Password" value="Qwerty0009@" placeholder="masukan password" autocomplete="false">
+                                                @error('password') <p class="text-danger text-xs pt-1"> {{$message}} </p>@enderror
+                                            </div>
+                                        @else
+
+                                            <div class="flex flex-col mb-3">
+                                                <input type="email" name="email" class="form-control form-control-lg" value="{{ old('email') ?? '' }}" aria-label="Email" placeholder="Masukan email">
+                                                @error('email') <p class="text-danger text-xs pt-1"> {{$message}} </p>@enderror
+                                            </div>
+                                            <div class="flex flex-col mb-3">
+                                                <input type="password" name="password" class="form-control form-control-lg" aria-label="Password" value="" placeholder="masukan password" autocomplete="false">
+                                                @error('password') <p class="text-danger text-xs pt-1"> {{$message}} </p>@enderror
+                                            </div>
+
+                                        @endif
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" name="remember" type="checkbox" id="rememberMe">
                                             <label class="form-check-label" for="rememberMe">Remember me</label>
@@ -40,12 +53,12 @@
                                         </div>
                                     </form>
                                 </div>
-                                <div class="card-footer text-center pt-0 px-lg-2 px-1">
+                                {{-- <div class="card-footer text-center pt-0 px-lg-2 px-1">
                                     <p class="mb-1 text-sm mx-auto">
                                         Forgot you password? Reset your password
                                         <a href="{{ route('reset-password') }}" class="text-primary text-gradient font-weight-bold">here</a>
                                     </p>
-                                </div>
+                                </div> --}}
                                 <div class="card-footer text-center pt-0 px-lg-2 px-1">
                                     <p class="mb-4 text-sm mx-auto">
                                         Don't have an account?
@@ -60,10 +73,9 @@
                                 style="background-image: url('https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-pro/assets/img/signin-ill.jpg');
               background-size: cover;">
                                 <span class="mask bg-gradient-primary opacity-6"></span>
-                                <h4 class="mt-5 text-white font-weight-bolder position-relative">"Attention is the new
-                                    currency"</h4>
-                                <p class="text-white position-relative">The more effortless the writing looks, the more
-                                    effort the writer actually put into the process.</p>
+                                <h4 class="mt-5 text-white font-weight-bolder position-relative">"Pull The Trigger, Bitch"</h4>
+                                {{-- <p class="text-white position-relative">The more effortless the writing looks, the more
+                                    effort the writer actually put into the process.</p> --}}
                             </div>
                         </div>
                     </div>

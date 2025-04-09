@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Chat;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\user;
+use Illuminate\Support\Facades\Cache;
 
 class MessageController extends Controller
 {
@@ -14,7 +15,11 @@ class MessageController extends Controller
     public function index(Request $request)
     {
 
-        $users = User::where('id', '!=', auth()->user()->id)->get();
+        $currentUserId = auth()->id();
+
+        $users = Cache::rememberForever("chat_users_except_{$currentUserId}", function () use ($currentUserId) {
+            return User::where('id', '!=', $currentUserId)->get();
+        });
 
         return view("pages.chat", compact('users'));
 
@@ -28,9 +33,15 @@ class MessageController extends Controller
             return redirect('/chat');
         }
 
+        $currentUserId = auth()->id();
+
+        $users = Cache::rememberForever("chat_users_except_{$currentUserId}", function () use ($currentUserId) {
+            return User::where('id', '!=', $currentUserId)->get();
+        });
+
         return view("pages.chat-private",[
             'receiver_id' => $id,
-            'users' => User::where('id', '!=', auth()->user()->id)->get(),
+            'users' => $users,
         ]);
 
 
